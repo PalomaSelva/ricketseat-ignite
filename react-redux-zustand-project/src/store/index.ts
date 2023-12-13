@@ -1,10 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
+import { player } from './slices/player'
 
 export const store = configureStore({
   // informações que vamos compartilhar entre todos os componentes da aplicação
   // Um objeto com todas as fatias do estado gigantão
-  reducer: {},
+  reducer: {
+    player,
+  },
 })
 
 // tipando os reducers
