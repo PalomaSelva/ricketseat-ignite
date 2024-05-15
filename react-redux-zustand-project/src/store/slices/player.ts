@@ -1,4 +1,5 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { PayloadAction, createSlice } from '@reduxjs/toolkit'
+import { useAppSelector } from '..'
 
 const playerSlice = createSlice({
   name: 'player',
@@ -57,7 +58,45 @@ const playerSlice = createSlice({
         },
       ],
     },
+    currentModuleIndex: 0,
+    currentLessonIndex: 0,
   },
-  reducers: {},
+  reducers: {
+    play: (state, action: PayloadAction<[number, number]>) => {
+      state.currentModuleIndex = action.payload[0]
+      state.currentLessonIndex = action.payload[1]
+    },
+    next: (state) => {
+      const lessonIndex = ++state.currentLessonIndex
+      const lessonLength =
+        state.courses.modules[state.currentModuleIndex].lessons.length
+
+      // se a quantidade de aulas na lista for igual ao index da aula atual
+      if (lessonIndex === lessonLength) {
+        const nextModuleIndex = ++state.currentModuleIndex
+        const nextModule = state.courses.modules[nextModuleIndex]
+        // Se existir um próximo módulo
+        if (nextModule) {
+          state.currentModuleIndex = nextModuleIndex
+          state.currentLessonIndex = 0
+        }
+      } else {
+        state.currentLessonIndex = lessonIndex
+      }
+    },
+  },
 })
 export const player = playerSlice.reducer
+export const { play, next } = playerSlice.actions
+
+export const useCurrentLesson = () => {
+  return useAppSelector((state) => {
+    const { currentLessonIndex, currentModuleIndex } = state.player
+    const currentModule = state.player.courses.modules[currentModuleIndex]
+    const currentLesson =
+      state.player.courses.modules[currentModuleIndex].lessons[
+        currentLessonIndex
+      ]
+    return { currentLesson, currentModule }
+  })
+}
