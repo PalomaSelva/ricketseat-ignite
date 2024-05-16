@@ -1,46 +1,64 @@
 import './index.css'
 import Rocket from './assets/rocket.svg'
-
-import { LucidePlusCircle } from 'lucide-react'
 import { useState } from 'react'
 import { ListItem } from './components/list/list-item'
 import { EmptyList } from './components/list/empty-list'
 import { HeaderList } from './components/list/list-header'
+import Swal from 'sweetalert2'
+import { TasksProps } from './types/task'
+import { Field } from './components/field'
 
 function App() {
   const tasksLocalStorage = localStorage.getItem('tasks')
   const [task, setTask] = useState<string>('')
-  const [listaTasks, setListaTasks] = useState<string[]>(
+  const [taskList, setTaskList] = useState<TasksProps[]>(
     tasksLocalStorage ? JSON.parse(tasksLocalStorage) : [],
   )
-  const [tasksCompletas, setTasksCompletas] = useState<boolean[]>([])
 
-  function handleCheckbox(index: number) {
-    const newTasksCompletas = [...tasksCompletas]
-    newTasksCompletas[index] = !newTasksCompletas[index]
-    setTasksCompletas(newTasksCompletas)
-    console.log(tasksCompletas)
+  function handleCheckbox(id: number) {
+    const changeCheckboxState = taskList.map((task) => {
+      if (task.id === id) {
+        task.checked = !task.checked
+      }
+      return task
+    })
+    setTaskList(changeCheckboxState)
   }
 
   function handleAddNewTask() {
-    const tasks = [...listaTasks, task]
-    setListaTasks(tasks)
-    localStorage.setItem('tasks', JSON.stringify(tasks))
+    setTaskList((prevTaskList) => {
+      const newTask = {
+        id: prevTaskList.length + 1,
+        label: task,
+        checked: false,
+      }
+      return [...prevTaskList, newTask]
+    })
+    localStorage.setItem('tasks', JSON.stringify(taskList))
     setTask('')
   }
-  function handleRemoveTask(index: number) {
-    setListaTasks((state) => {
-      const newState = [...state]
-      newState.splice(index, 1) // retorna os itens removidos
-      return newState // vai retornar o array modificado, sem ositens removidos
-    })
+  function handleRemoveTask(id: number) {
+    Swal.fire({
+      title: 'Tem certeza?',
+      text: 'Não será possível reverter a exclusão',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Excluir',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setTaskList((state) => {
+          const currentValue: TasksProps[] = [...state]
+          const newTaskList = currentValue.filter((value) => {
+            return value.id !== id
+          })
+          return newTaskList
+        })
 
-    setTasksCompletas((state) => {
-      const newState = [...state]
-      newState.splice(index, 1)
-      return newState
+        localStorage.setItem('tasks', JSON.stringify(taskList))
+      }
     })
-    localStorage.setItem('tasks', JSON.stringify(task))
   }
 
   return (
@@ -52,39 +70,28 @@ function App() {
             to<span className="text-blue-700">do</span>
           </h1>
         </div>
-        <div className="mt-12 flex gap-3 justify-center">
-          <input
-            type="text"
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            placeholder="Adicione uma nova task"
-            className="border text-gray-100 flex-1 focus:outline-purple-700 placeholder:text-gray-300 border-gray-700 bg-gray-500 p-4 rounded-lg border-solid"
-          />
-          <button
-            onClick={() => handleAddNewTask()}
-            disabled={task === ''}
-            className="flex disabled:bg-slate-500 font-semibold text-gray-100 justify-center items-center gap-2 bg-blue-700 p-4 rounded-lg"
-          >
-            Criar
-            <LucidePlusCircle />
-          </button>
-        </div>
+        <Field
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+          addNewTask={() => handleAddNewTask()}
+          task={task}
+        />
         <div>
           <HeaderList
-            tasksCounter={listaTasks.length}
-            tasksCheckedCounter={
-              tasksCompletas.filter((task) => task === true).length
-            }
+            tasksCounter={taskList.length}
+            tasksCheckedCounter={taskList.filter((task) => task.checked).length}
           />
           <hr className=" my-5 border-gray-400" />
         </div>
-        {listaTasks && listaTasks.length > 0 ? (
-          <ListItem
-            items={listaTasks}
-            tasksCompletas={tasksCompletas}
-            handleCheckbox={handleCheckbox}
-            removeTask={handleRemoveTask}
-          />
+        {taskList && taskList.length > 0 ? (
+          taskList.map((task, index) => (
+            <ListItem
+              key={index}
+              item={task}
+              handleCheckbox={handleCheckbox}
+              removeTask={handleRemoveTask}
+            />
+          ))
         ) : (
           <EmptyList />
         )}
